@@ -1,16 +1,18 @@
 package io.github.singlerr.onehand
 
-import android.Manifest
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import android.view.accessibility.AccessibilityManager
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,16 +27,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.isGranted
-import com.google.accompanist.permissions.rememberPermissionState
 import io.github.singlerr.onehand.service.OverlayService
 import io.github.singlerr.onehand.ui.theme.appTheme
 
@@ -68,7 +69,7 @@ private fun startOverlayService(context: Context) {
     ContextCompat.startForegroundService(context, Intent(context, OverlayService::class.java))
 }
 
-private fun checkAccessibility(context: Context): Boolean  {
+private fun checkAccessibility(context: Context): Boolean {
     val mgr = context.getSystemService(Context.ACCESSIBILITY_SERVICE) as AccessibilityManager
     return mgr.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.DEFAULT).any {
             app ->
@@ -76,37 +77,80 @@ private fun checkAccessibility(context: Context): Boolean  {
     }
 }
 
-@OptIn(ExperimentalPermissionsApi::class)
+private fun restart(activity: Activity) {
+    activity.recreate()
+}
+
 @Preview(showBackground = true)
 @Composable
 fun PermissionManagement(modifier: Modifier = Modifier) {
-    val permState = rememberPermissionState(permission = Manifest.permission.SYSTEM_ALERT_WINDOW)
     val context = LocalContext.current
+    val accessibility =
+        remember {
+            mutableStateOf(checkAccessibility(context))
+        }
+    val overlay =
+        remember {
+            mutableStateOf(
+                Settings.canDrawOverlays(context),
+            )
+        }
 
-    if (!checkAccessibility(context))
-        {
-            context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-            return
+    val accessibilityLauncher =
+        rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult()) { _ ->
+            accessibility.value = checkAccessibility(context)
+            if (accessibility.value && overlay.value) {
+                context.findActivity().finish()
+                startOverlayService(context)
+            }
+        }
+    val overlayLauncher =
+        rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult()) {
+            overlay.value = Settings.canDrawOverlays(context)
         }
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
         Column(verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
             when {
-                permState.status.isGranted -> {
-                    Icon(imageVector = Icons.Default.Build, contentDescription = null, Modifier.size(Dp.Hairline))
-                    Text(text = stringResource(id = R.string.info_req_perm))
-                    Text(text = stringResource(id = R.string.info_accessibility))
-                    Button(onClick = {
-                        permState.launchPermissionRequest()
-                    }) {
-                        Text(text = stringResource(id = R.string.req_parm))
+                (!overlay.value) || !accessibility.value -> {
+                    Icon(imageVector = Icons.Default.Build, contentDescription = null, Modifier.size(50.dp))
+                    if (!overlay.value) {
+                        Text(text = stringResource(id = R.string.info_req_perm))
+                        Button(onClick = {
+                            overlayLauncher.launch(
+                                Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, parsePackageName(context.packageName)),
+                            )
+                        }) {
+                            Text(text = stringResource(id = R.string.req_perm))
+                        }
+                    }
+                    if (!accessibility.value) {
+                        Text(text = stringResource(id = R.string.info_accessibility))
+                        Button(onClick = {
+                            accessibilityLauncher.launch(
+                                Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS),
+                            )
+                        }) {
+                            Text(text = stringResource(id = R.string.req_acc))
+                        }
                     }
                 }
                 else -> {
+                    context.findActivity().finish()
+                    startOverlayService(context)
                     Icon(imageVector = Icons.Default.Check, contentDescription = null)
                     Text(text = stringResource(id = R.string.ready_to_use))
-                    startOverlayService(context)
+                    Button(onClick = {
+                        context.findActivity().finish()
+                        startOverlayService(context)
+                    }) {
+                        Text(text = stringResource(id = R.string.start))
+                    }
                 }
             }
         }
     }
+}
+
+fun parsePackageName(packageName: String): Uri {
+    return Uri.parse("package:$packageName")
 }

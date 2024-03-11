@@ -20,7 +20,7 @@ class NavAccessService : AccessibilityService() {
         serviceInfo = info
     }
 
-    fun executeAction(action: Int)  {
+    fun executeAction(action: Int) {
         performGlobalAction(action)
     }
 

@@ -53,7 +53,6 @@ android {
 
 dependencies {
     implementation(libs.floating.bubble.view)
-    implementation(libs.com.google.accompanist.permissions)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

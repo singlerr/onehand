@@ -2,6 +2,7 @@ package io.github.singlerr.onehand.service
 
 import android.accessibilityservice.AccessibilityService
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
@@ -12,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material3.Icon
@@ -35,21 +37,31 @@ class OverlayService : ExpandableBubbleService() {
         return BubbleBuilder(this)
             .bubbleDraggable(true)
             .bubbleCompose {
-                Column(modifier = Modifier.background(color = Color.Transparent, shape = RoundedCornerShape(25.dp)).padding(10.dp)) {
+                Column(
+                    modifier =
+                        Modifier
+                            .background(color = Color.Transparent, shape = RoundedCornerShape(25.dp))
+                            .padding(10.dp),
+                ) {
                     IconButton(onClick = {
                         NavAccessService.instance?.executeAction(AccessibilityService.GLOBAL_ACTION_BACK)
                     }) {
-                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color.Magenta)
+                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color.Red)
                     }
                     IconButton(onClick = {
                         NavAccessService.instance?.executeAction(AccessibilityService.GLOBAL_ACTION_HOME)
                     }) {
-                        Icon(imageVector = Icons.Default.Home, contentDescription = null, tint = Color.Magenta)
+                        Icon(imageVector = Icons.Default.Home, contentDescription = null, tint = Color.Red)
                     }
                     IconButton(onClick = {
                         NavAccessService.instance?.executeAction(AccessibilityService.GLOBAL_ACTION_BACK)
                     }) {
-                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = Color.Magenta)
+                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = Color.Red)
+                    }
+                    IconButton(onClick = {
+                        applicationContext.stopService(Intent(applicationContext, OverlayService::class.java))
+                    }) {
+                        Icon(imageVector = Icons.Default.Close, contentDescription = null, tint = Color.Red)
                     }
                 }
             }

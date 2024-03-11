@@ -1,7 +1,9 @@
 <resources>
-    <string name="app_name">onehand_android</string>
+    <string name="app_name">OneHand</string>
     <string name="info_req_perm">"Display over other apps" permission required</string>
-    <string name="req_parm">Obtain permission</string>
+    <string name="req_perm">Obtain permission</string>
+    <string name="req_acc">Obtain Accessibility</string>
     <string name="ready_to_use">Good! You can now use our features</string>
     <string name="info_accessibility">App requires accessibility</string>
+    <string name="start">Start using OneHand</string>
 </resources>
